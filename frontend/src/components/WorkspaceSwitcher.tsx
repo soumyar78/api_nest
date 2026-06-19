@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useWorkspaceStore } from '../store/workspaceStore'
 import type { Workspace } from '../store/workspaceStore'
-import { Check, ChevronDown, Plus, Settings, Trash, Edit3, X } from 'lucide-react'
+import { Check, ChevronDown, Plus, Settings, Trash, Edit3, X, Crown } from 'lucide-react'
 
 export default function WorkspaceSwitcher() {
   const { 
@@ -24,6 +24,9 @@ export default function WorkspaceSwitcher() {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+
+  const MAX_WORKSPACES = 2
   
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -39,11 +42,25 @@ export default function WorkspaceSwitcher() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newWorkspaceName.trim()) return
-    setLoading(true)
+    const nameTrimmed = newWorkspaceName.trim()
+    if (!nameTrimmed) return
     setError(null)
-    
-    const ws = await createWorkspace(newWorkspaceName)
+
+    // Free tier limit check
+    if (workspaces.length >= MAX_WORKSPACES) {
+      setError(`Free Tier Limit: You can create a maximum of ${MAX_WORKSPACES} workspaces. Premium plan with unlimited workspaces is coming soon!`)
+      return
+    }
+
+    // Duplicate name check
+    const nameExists = workspaces.some(ws => ws.name.toLowerCase() === nameTrimmed.toLowerCase())
+    if (nameExists) {
+      setError(`A workspace named "${nameTrimmed}" already exists.`)
+      return
+    }
+
+    setLoading(true)
+    const ws = await createWorkspace(nameTrimmed)
     setLoading(false)
     if (ws) {
       setNewWorkspaceName('')
@@ -71,15 +88,15 @@ export default function WorkspaceSwitcher() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this workspace? This action is permanent and will delete all associated requests.')) {
-      setLoading(true)
-      const success = await deleteWorkspace(id)
-      setLoading(false)
-      if (success) {
-        setEditingWorkspace(null)
-      } else {
-        alert('Failed to delete workspace. Note that personal workspaces cannot be deleted.')
-      }
+    setLoading(true)
+    setError(null)
+    const success = await deleteWorkspace(id)
+    setLoading(false)
+    if (success) {
+      setEditingWorkspace(null)
+      setDeleteConfirmId(null)
+    } else {
+      setError('Failed to delete workspace. The default workspace cannot be deleted.')
     }
   }
 
@@ -90,13 +107,21 @@ export default function WorkspaceSwitcher() {
           <div className="w-full max-w-md rounded-2xl border border-zinc-200 p-6 shadow-2xl space-y-4 bg-white">
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <h3 className="text-sm font-bold text-zinc-850">Create New Workspace</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-zinc-400 hover:text-zinc-700 cursor-pointer">
+              <button onClick={() => { setShowCreateModal(false); setError(null) }} className="text-zinc-400 hover:text-zinc-700 cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
+
+            {/* Workspace usage badge */}
+            <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200/80 rounded-xl p-2.5">
+              <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider">Workspaces</span>
+              <span className={`text-[10px] font-extrabold ${workspaces.length >= MAX_WORKSPACES ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {workspaces.length} / {MAX_WORKSPACES}
+              </span>
+            </div>
             
             {error && (
-              <div className="rounded-lg bg-red-50 border border-red-100 p-2.5 text-xs text-red-700">
+              <div className="rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700 font-semibold">
                 {error}
               </div>
             )}
@@ -110,7 +135,7 @@ export default function WorkspaceSwitcher() {
                   autoFocus
                   placeholder="e.g. Mobile API Team"
                   value={newWorkspaceName}
-                  onChange={(e) => setNewWorkspaceName(e.target.value)}
+                  onChange={(e) => { setNewWorkspaceName(e.target.value); setError(null) }}
                   className="w-full bg-zinc-50 border border-zinc-200 rounded-xl py-2.5 px-3.5 text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-all font-medium"
                 />
               </div>
@@ -118,14 +143,14 @@ export default function WorkspaceSwitcher() {
               <div className="flex justify-end gap-2.5 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => { setShowCreateModal(false); setError(null) }}
                   className="px-4 py-2 bg-zinc-50 border border-zinc-200 text-zinc-500 hover:text-zinc-800 text-xs font-semibold rounded-xl cursor-pointer transition-all hover:bg-zinc-100/60"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || workspaces.length >= MAX_WORKSPACES}
                   className="px-4 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-emerald-600 disabled:opacity-50 cursor-pointer shadow-md shadow-emerald-500/10 transition-all"
                 >
                   {loading ? 'Creating...' : 'Create Workspace'}
@@ -155,6 +180,14 @@ export default function WorkspaceSwitcher() {
                 {error}
               </div>
             )}
+
+            {/* Workspace usage badge */}
+            <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200/80 rounded-xl p-2.5">
+              <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-wider">Workspaces</span>
+              <span className={`text-[10px] font-extrabold ${workspaces.length >= MAX_WORKSPACES ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {workspaces.length} / {MAX_WORKSPACES}
+              </span>
+            </div>
 
             {/* List of Workspaces for management */}
             <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
@@ -190,6 +223,7 @@ export default function WorkspaceSwitcher() {
                           onClick={() => {
                             setEditingWorkspace(ws)
                             setEditWorkspaceName(ws.name)
+                            setDeleteConfirmId(null)
                           }}
                           className="p-1.5 text-zinc-400 hover:text-zinc-800 hover:bg-zinc-100 rounded-lg cursor-pointer transition-all"
                           title="Rename Workspace"
@@ -197,13 +231,34 @@ export default function WorkspaceSwitcher() {
                           <Edit3 className="h-4 w-4" />
                         </button>
                         {workspaces.length > 1 && (
-                          <button
-                            onClick={() => handleDelete(ws.id)}
-                            className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-all"
-                            title="Delete Workspace"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </button>
+                          deleteConfirmId === ws.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDelete(ws.id)}
+                                disabled={loading}
+                                className="px-2.5 py-1 text-[10px] font-extrabold text-white bg-rose-500 hover:bg-rose-600 rounded-lg cursor-pointer transition-all shadow-sm disabled:opacity-50"
+                              >
+                                {loading ? '…' : 'Delete'}
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-2 py-1 text-[10px] font-bold text-zinc-500 hover:text-zinc-800 rounded-lg cursor-pointer transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setDeleteConfirmId(ws.id)
+                                setEditingWorkspace(null)
+                              }}
+                              className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-all"
+                              title="Delete Workspace"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </button>
+                          )
                         )}
                       </div>
                     </>
@@ -272,17 +327,24 @@ export default function WorkspaceSwitcher() {
             </div>
 
             <div className="border-t border-zinc-100 pt-1.5 space-y-1">
-              <button
-                onClick={() => {
-                  setShowCreateModal(true)
-                  setIsOpen(false)
-                  setError(null)
-                }}
-                className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-emerald-650 hover:text-emerald-700 hover:bg-emerald-50/50 rounded-lg transition-all text-left cursor-pointer"
-              >
-                <Plus className="h-4 w-4 text-emerald-500" />
-                <span className="font-semibold">Create Workspace</span>
-              </button>
+              {workspaces.length >= MAX_WORKSPACES ? (
+                <div className="flex items-center gap-2 px-2.5 py-2 text-xs text-zinc-400 rounded-lg">
+                  <Crown className="h-4 w-4 text-amber-400" />
+                  <span className="font-semibold">Workspace limit reached ({MAX_WORKSPACES}/{MAX_WORKSPACES})</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShowCreateModal(true)
+                    setIsOpen(false)
+                    setError(null)
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-emerald-650 hover:text-emerald-700 hover:bg-emerald-50/50 rounded-lg transition-all text-left cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 text-emerald-500" />
+                  <span className="font-semibold">Create Workspace</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowManageModal(true)
