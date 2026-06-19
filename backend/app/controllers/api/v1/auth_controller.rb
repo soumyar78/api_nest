@@ -79,7 +79,7 @@ module Api
           user_by_cookie.revoke_refresh_token! if user_by_cookie
         end
 
-        cookies.delete(:refresh_token, path: '/api/v1/auth/refresh')
+        cookies.delete(:refresh_token, path: '/api/v1/auth')
         render json: { message: "Logged out successfully" }, status: :ok
       end
 
@@ -164,9 +164,9 @@ module Api
             value: token,
             httponly: true,
             secure: Rails.env.production?,
-            same_site: :lax,
+            same_site: Rails.env.production? ? :none : :lax,
             expires: 7.days.from_now,
-            path: '/api/v1/auth/refresh'
+            path: '/api/v1/auth'
           }
         end
       end
