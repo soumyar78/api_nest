@@ -7,12 +7,10 @@ module Api
       def register
         user = User.new(register_params)
         if user.save
-          # Automatically confirm email in development for ease of testing
-          if Rails.env.development? || Rails.env.test?
-            user.confirm!
-          end
+          # Automatically confirm email since mailer is not configured
+          user.confirm!
 
-          render json: { message: "Registration successful. Please verify your email." }, status: :created
+          render json: { message: "Registration successful. You can now log in." }, status: :created
         else
           render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
         end
