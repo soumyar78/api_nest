@@ -7,16 +7,16 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      namespace :auth do
+      scope :auth, controller: :auth do
         post :register
         post :login
         post :refresh
         post :logout
-        get :confirm, to: "auth#confirm_email"
-        post "forgot-password", to: "auth#forgot_password"
-        post "reset-password", to: "auth#reset_password"
+        get :confirm, action: :confirm_email
+        post "forgot-password", action: :forgot_password
+        post "reset-password", action: :reset_password
         get :me
-        patch :profile, to: "auth#update_profile"
+        patch :profile, action: :update_profile
       end
 
       resources :workspaces, only: [:index, :show, :create, :update, :destroy] do
