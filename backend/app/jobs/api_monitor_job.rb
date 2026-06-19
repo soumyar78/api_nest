@@ -1,8 +1,4 @@
 class ApiMonitorJob < ApplicationJob
-  # Use ActiveJob if standard, or define a standard class
-end
-# Let's use standard ActiveJob::Base
-class ApiMonitorJob < ActiveJob::Base
   queue_as :default
 
   def perform(monitor_id)
@@ -12,7 +8,6 @@ class ApiMonitorJob < ActiveJob::Base
     workspace = monitor.workspace
     user = workspace.user
 
-    # Execute request
     result = RequestExecutorService.execute(
       workspace: workspace,
       method: monitor.method,
@@ -25,7 +20,6 @@ class ApiMonitorJob < ActiveJob::Base
 
     success = result[:status] >= 100 && result[:status] < 400
 
-    # Create Monitor Log
     monitor.api_monitor_logs.create!(
       response_status: result[:status],
       response_time_ms: result[:time_ms],
@@ -33,10 +27,8 @@ class ApiMonitorJob < ActiveJob::Base
       error_message: success ? nil : "HTTP Status #{result[:status]}. Body: #{result[:body].to_s.truncate(200)}"
     )
 
-    # Update last checked timestamp
     monitor.update!(last_checked_at: Time.current)
 
-    # Send Notification/Alert on Failure
     unless success
       Notification.create!(
         user: user,
