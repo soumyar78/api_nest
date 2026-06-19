@@ -1,4 +1,4 @@
-class ApiMonitorJob < ApplicationRecordOrJob
+class ApiMonitorJob < ApplicationJob
   # Use ActiveJob if standard, or define a standard class
 end
 # Let's use standard ActiveJob::Base
