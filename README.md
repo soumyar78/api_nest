@@ -93,7 +93,7 @@ Uptime monitoring and real-time alert notifications are reserved for the upcomin
 - **Postman Import** — paste a Postman Collection JSON to bulk-import requests
 - **Duplicate collections** with validation against name conflicts
 - Inline stateful delete confirmations (no browser prompts)
-- Free tier: **2 workspaces**, **5 collections** per workspace, **5 requests** per collection
+- Free tier: **5 collections** max, **5 requests** per collection
 
 ### 🌍 Environments & Variable Interpolation
 - Create scoped profiles: `Development`, `Staging`, `Production`
@@ -211,8 +211,7 @@ ApiNest ships with a **freemium tier system** designed for future monetization:
 
 | Feature | Free Tier | Premium (Coming Soon) |
 |---------|-----------|----------------------|
-| Workspaces | 2 max | Unlimited |
-| Collections | 5 max per workspace | Unlimited |
+| Collections | 5 max | Unlimited |
 | Requests / Collection | 5 max | Unlimited |
 | Environment Profiles | ✅ | ✅ |
 | Request History | ✅ | ✅ |
