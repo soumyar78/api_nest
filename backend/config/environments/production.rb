@@ -74,15 +74,24 @@ Rails.application.configure do
 
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.delivery_method = :smtp
-  config.action_mailer.smtp_settings = {
+
+  smtp_user = ENV["SMTP_USERNAME"].presence || ENV["GMAIL_USERNAME"].presence
+  smtp_password = ENV["SMTP_PASSWORD"].presence || ENV["GMAIL_APP_PASSWORD"].presence
+
+  smtp_config = {
     address:              ENV.fetch("SMTP_ADDRESS", "smtp.gmail.com"),
     port:                 ENV.fetch("SMTP_PORT", 587).to_i,
     domain:               ENV.fetch("SMTP_DOMAIN", "gmail.com"),
-    user_name:            ENV.fetch("SMTP_USERNAME", ENV["GMAIL_USERNAME"]),
-    password:             ENV.fetch("SMTP_PASSWORD", ENV["GMAIL_APP_PASSWORD"]),
-    authentication:       ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym,
     enable_starttls_auto: ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", "true") == "true"
   }
+
+  if smtp_user && smtp_password
+    smtp_config[:user_name] = smtp_user
+    smtp_config[:password] = smtp_password
+    smtp_config[:authentication] = ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym
+  end
+
+  config.action_mailer.smtp_settings = smtp_config
   config.action_mailer.default_url_options = { host: ENV.fetch("BACKEND_URL_HOST", "api.apinest.com") }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
