@@ -19,7 +19,7 @@ export default function ForgotPassword() {
     try {
       const res = await api.post('/api/v1/auth/forgot-password', { email })
       if (res.ok) {
-        setSuccess('If the email is registered, a password reset link has been logged/sent.')
+        setSuccess("If the email is registered, a password reset link has been sent. Please also check your spam/junk folder if you don't see it in your inbox.")
         setEmail('')
       } else {
         const data = await res.json()
