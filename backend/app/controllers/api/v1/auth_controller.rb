@@ -99,6 +99,7 @@ module Api
           user.generate_reset_password_token!
           # Log token in development so we can copy-paste it during testing
           Rails.logger.info "RESET PASSWORD TOKEN FOR #{user.email}: #{user.reset_password_token}"
+          UserMailer.reset_password_email(user).deliver_now
         end
 
         render json: { message: "If the email exists, a reset link has been sent." }, status: :ok
